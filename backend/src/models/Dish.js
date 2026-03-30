@@ -1,5 +1,12 @@
 const mongoose = require('mongoose');
 
+const ratingSchema = new mongoose.Schema({
+    userId:   { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    stars:    { type: Number, required: true, min: 1, max: 5 },
+    comment:  { type: String, default: '', trim: true },
+    createdAt: { type: Date, default: Date.now },
+});
+
 const dishSchema = new mongoose.Schema(
     {
         name: {
@@ -18,7 +25,7 @@ const dishSchema = new mongoose.Schema(
             min: 0,
         },
         photo: {
-            type: String, // relative path from uploads/
+            type: String,
             required: [true, 'Dish photo is required'],
         },
         location: {
@@ -44,8 +51,18 @@ const dishSchema = new mongoose.Schema(
             default: 'Home Cooked',
             trim: true,
         },
+        ratings: [ratingSchema],
     },
-    { timestamps: true }
+    { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+dishSchema.virtual('avgRating').get(function () {
+    if (!this.ratings || this.ratings.length === 0) return 0;
+    return +(this.ratings.reduce((s, r) => s + r.stars, 0) / this.ratings.length).toFixed(1);
+});
+
+dishSchema.virtual('ratingCount').get(function () {
+    return this.ratings ? this.ratings.length : 0;
+});
 
 module.exports = mongoose.model('Dish', dishSchema);

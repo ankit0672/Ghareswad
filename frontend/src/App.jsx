@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import LoginPage from './pages/LoginPage';
 import CustomerPage from './pages/CustomerPage';
 import ChefPage from './pages/ChefPage';
+import OrdersPage from './pages/OrdersPage';
 
 const ProtectedRoute = ({ children, role }) => {
   const { user, loading } = useAuth();
@@ -20,7 +21,7 @@ export default function App() {
     return (
       <div className="loading-screen">
         <div className="spinner" />
-        <p>Loading Ghareswad...</p>
+        <p>Loading GhorerSwad...</p>
       </div>
     );
   }
@@ -31,6 +32,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={user ? <Navigate to={user.role === 'chef' ? '/chef' : '/customer'} replace /> : <LoginPage />} />
         <Route path="/customer" element={<ProtectedRoute role="customer"><CustomerPage /></ProtectedRoute>} />
+        <Route path="/customer/orders" element={<ProtectedRoute role="customer"><OrdersPage /></ProtectedRoute>} />
         <Route path="/chef" element={<ProtectedRoute role="chef"><ChefPage /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

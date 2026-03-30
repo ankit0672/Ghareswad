@@ -41,15 +41,23 @@ const register = async (req, res) => {
 // POST /api/auth/login
 const login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, role } = req.body;
 
-        if (!email || !password) {
-            return res.status(400).json({ message: 'Email and password are required' });
+        if (!email || !password || !role) {
+            return res.status(400).json({ message: 'Email, password, and role are required' });
+        }
+
+        if (!['customer', 'chef'].includes(role)) {
+            return res.status(400).json({ message: 'Invalid login role specified' });
         }
 
         const user = await User.findOne({ email });
         if (!user || !(await user.matchPassword(password))) {
             return res.status(401).json({ message: 'Invalid email or password' });
+        }
+        
+        if (user.role !== role) {
+            return res.status(403).json({ message: 'Invalid credentials for this role' });
         }
 
         res.json({

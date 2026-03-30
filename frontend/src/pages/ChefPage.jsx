@@ -1,7 +1,40 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { dishAPI, orderAPI } from '../api';
 import { useAuth } from '../context/AuthContext';
 
+// ─── Location helper ───────────────────────────────────────────────────────────
+async function fetchLocationName() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) return reject(new Error('Geolocation not supported'));
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            const { latitude, longitude } = pos.coords;
+            try {
+                const res = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+                );
+                const data = await res.json();
+                const city = data.address?.city || data.address?.town || data.address?.village || '';
+                const state = data.address?.state || '';
+                resolve(city && state ? `${city}, ${state}` : city || state || `${latitude.toFixed(3)}, ${longitude.toFixed(3)}`);
+            } catch {
+                resolve(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+            }
+        }, reject, { timeout: 8000 });
+    });
+}
+
+// ─── Stars display ───────────────────────────────────────────────────────────
+function Stars({ avg, count }) {
+    if (!count) return <span className="dish-no-rating">No ratings yet</span>;
+    const full = Math.round(avg);
+    return (
+        <span className="dish-stars" style={{ marginBottom: 8 }}>
+            {'★'.repeat(full)}{'☆'.repeat(5 - full)} <span className="dish-rating-val">{avg} ({count})</span>
+        </span>
+    );
+}
+
+// ─── StatCard ─────────────────────────────────────────────────────────────────
 function StatCard({ icon, label, value, type }) {
     return (
         <div className={`stat-card ${type || ''}`}>
@@ -12,12 +45,14 @@ function StatCard({ icon, label, value, type }) {
     );
 }
 
+// ─── UploadForm ───────────────────────────────────────────────────────────────
 function UploadForm({ onSuccess }) {
     const [form, setForm] = useState({ name: '', price: '', location: '', description: '', category: '' });
     const [file, setFile] = useState(null);
     const [preview, setPreview] = useState(null);
-    const [status, setStatus] = useState(null); // { type: 'success'|'error', msg }
+    const [status, setStatus] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [locLoading, setLocLoading] = useState(false);
 
     const update = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }));
 
@@ -26,6 +61,18 @@ function UploadForm({ onSuccess }) {
         if (!f) return;
         setFile(f);
         setPreview(URL.createObjectURL(f));
+    };
+
+    const useMyLocation = async () => {
+        setLocLoading(true);
+        try {
+            const loc = await fetchLocationName();
+            setForm((p) => ({ ...p, location: loc }));
+        } catch {
+            alert('Could not get location. Please enable location permission.');
+        } finally {
+            setLocLoading(false);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -71,7 +118,7 @@ function UploadForm({ onSuccess }) {
                             </div>
                         </>
                     )}
-                    <input type="file" accept="image/*" onChange={handleFile} required={!file} />
+                    <input type="file" accept="image/*" capture="environment" onChange={handleFile} required={!file} />
                 </div>
 
                 <div className="form-group">
@@ -79,14 +126,19 @@ function UploadForm({ onSuccess }) {
                     <input type="text" placeholder="e.g. Dal Makhani, Aloo Paratha" value={form.name} onChange={update('name')} required />
                 </div>
 
-                <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="form-row">
                     <div className="form-group">
                         <label>Price (₹) *</label>
                         <input type="number" placeholder="120" min="1" value={form.price} onChange={update('price')} required />
                     </div>
                     <div className="form-group">
                         <label>Location *</label>
-                        <input type="text" placeholder="Delhi, Noida…" value={form.location} onChange={update('location')} required />
+                        <div className="loc-input-row">
+                            <input type="text" placeholder="Delhi, Noida…" value={form.location} onChange={update('location')} required />
+                            <button type="button" className="btn btn-ghost btn-sm loc-btn" onClick={useMyLocation} disabled={locLoading} title="Use my location">
+                                {locLoading ? '⏳' : '📍'}
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -108,9 +160,7 @@ function UploadForm({ onSuccess }) {
                     <input type="text" placeholder="A short description…" value={form.description} onChange={update('description')} />
                 </div>
 
-                {status && (
-                    <div className={`upload-status ${status.type}`}>{status.msg}</div>
-                )}
+                {status && <div className={`upload-status ${status.type}`}>{status.msg}</div>}
 
                 <button className="btn btn-primary btn-full" type="submit" disabled={loading}>
                     {loading ? '⏳ Uploading…' : '🍲 List Dish'}
@@ -120,35 +170,78 @@ function UploadForm({ onSuccess }) {
     );
 }
 
-function ChefDishCard({ dish, onToggle, onDelete }) {
+// ─── ChefDishCard ─────────────────────────────────────────────────────────────
+function ChefDishCard({ dish, onToggle, onDelete, onPhotoUpdate }) {
     const imgUrl = dish.photo ? `/uploads/${dish.photo}` : null;
+    const fileRef = useRef(null);
+    const [uploading, setUploading] = useState(false);
+
+    const handlePhotoChange = async (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        setUploading(true);
+        try {
+            const fd = new FormData();
+            fd.append('photo', f);
+            await dishAPI.updatePhoto(dish._id, fd);
+            onPhotoUpdate();
+        } catch {
+            alert('Failed to update photo.');
+        } finally {
+            setUploading(false);
+        }
+    };
+
     return (
         <div className="chef-dish-card">
-            {imgUrl ? (
-                <img className="chef-dish-img" src={imgUrl} alt={dish.name} />
-            ) : (
-                <div className="chef-dish-img-placeholder">🍛</div>
-            )}
+            <div className="chef-dish-img-wrap" onClick={() => fileRef.current.click()}>
+                {imgUrl ? (
+                    <img className="chef-dish-img" src={imgUrl} alt={dish.name} />
+                ) : (
+                    <div className="chef-dish-img-placeholder">🍛</div>
+                )}
+                <div className="chef-dish-img-overlay">
+                    {uploading ? '⏳' : '📷'}
+                </div>
+                <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    style={{ display: 'none' }}
+                    onChange={handlePhotoChange}
+                />
+            </div>
             <div className="chef-dish-info">
                 <div className="chef-dish-name">{dish.name}</div>
                 <div className="chef-dish-price">₹{dish.price}</div>
+                <Stars avg={dish.avgRating} count={dish.ratingCount} />
                 <div className="chef-dish-loc">📍 {dish.location}</div>
                 <span className={`avail-badge ${dish.isAvailable ? 'on' : 'off'}`}>
                     {dish.isAvailable ? '● Available' : '● Unavailable'}
                 </span>
+                {dish.ratings && dish.ratings.some(r => r.comment) && (
+                    <div style={{ marginTop: 10, fontSize: '0.8rem', background: 'var(--cream-light)', padding: 6, borderRadius: 4 }}>
+                        <div style={{ fontWeight: 600, marginBottom: 4 }}>Recent Feedback:</div>
+                        {dish.ratings.filter(r => r.comment).slice(-3).map((r, idx) => (
+                            <div key={idx} style={{ marginBottom: 4, fontStyle: 'italic', borderLeft: '2px solid var(--saffron)', paddingLeft: 6 }}>
+                                "{r.comment}" <span style={{ color: 'var(--saffron)' }}>({'★'.repeat(r.stars)})</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
             <div className="chef-dish-actions">
                 <button className="btn btn-ghost btn-sm" style={{ fontSize: '0.75rem', padding: '5px 10px' }} onClick={() => onToggle(dish._id)}>
                     {dish.isAvailable ? 'Pause' : 'Resume'}
                 </button>
-                <button className="btn btn-danger btn-sm" onClick={() => onDelete(dish._id)}>
-                    Delete
-                </button>
+                <button className="btn btn-danger btn-sm" onClick={() => onDelete(dish._id)}>Delete</button>
             </div>
         </div>
     );
 }
 
+// ─── OrderCard ────────────────────────────────────────────────────────────────
 function OrderCard({ order, onStatusChange }) {
     const statuses = ['pending', 'accepted', 'preparing', 'delivered'];
     return (
@@ -160,7 +253,9 @@ function OrderCard({ order, onStatusChange }) {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                     <span className={`order-status ${order.status}`}>{order.status}</span>
-                    <div className="order-date" style={{ marginTop: 4 }}>{new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                    <div className="order-date" style={{ marginTop: 4 }}>
+                        {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </div>
                 </div>
             </div>
             <div className="order-items-list">
@@ -168,6 +263,11 @@ function OrderCard({ order, onStatusChange }) {
                     <span key={i}>• {it.dishName} × {it.qty} — ₹{(it.price * it.qty).toFixed(2)}</span>
                 ))}
             </div>
+            {order.status === 'cancelled' && order.cancellationReason && (
+                <div style={{ marginTop: 6, marginBottom: 10, padding: 6, background: '#fee2e2', color: '#b91c1c', borderRadius: 4, fontSize: '0.8rem' }}>
+                    <strong>Cancel Reason:</strong> {order.cancellationReason}
+                </div>
+            )}
             {order.deliveryAddress && (
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 10 }}>
                     📍 {order.deliveryAddress}
@@ -185,9 +285,7 @@ function OrderCard({ order, onStatusChange }) {
                                 Mark {statuses[statuses.indexOf(order.status) + 1]}
                             </button>
                         )}
-                        <button className="btn btn-danger btn-sm" onClick={() => onStatusChange(order._id, 'cancelled')}>
-                            Cancel
-                        </button>
+                        <button className="btn btn-danger btn-sm" onClick={() => onStatusChange(order._id, 'cancelled')}>Cancel</button>
                     </div>
                 )}
             </div>
@@ -195,8 +293,9 @@ function OrderCard({ order, onStatusChange }) {
     );
 }
 
+// ─── ChefPage ─────────────────────────────────────────────────────────────────
 export default function ChefPage() {
-    const [activeTab, setActiveTab] = useState('menu'); // 'menu' | 'orders'
+    const [activeTab, setActiveTab] = useState('menu');
     const [dishes, setDishes] = useState([]);
     const [orders, setOrders] = useState([]);
     const [stats, setStats] = useState({ totalOrders: 0, totalEarnings: 0, pendingOrders: 0, deliveredOrders: 0 });
@@ -205,10 +304,8 @@ export default function ChefPage() {
 
     const loadDishes = useCallback(async () => {
         setLoadingDishes(true);
-        try {
-            const res = await dishAPI.getMy();
-            setDishes(res.data);
-        } catch { setDishes([]); }
+        try { const res = await dishAPI.getMy(); setDishes(res.data); }
+        catch { setDishes([]); }
         finally { setLoadingDishes(false); }
     }, []);
 
@@ -247,7 +344,6 @@ export default function ChefPage() {
                 <p>Manage your dishes, track orders, and grow your earnings</p>
             </div>
 
-            {/* Stats */}
             <div className="stats-grid">
                 <StatCard icon="📦" label="Total Orders" value={stats.totalOrders} />
                 <StatCard icon="⏳" label="Pending" value={stats.pendingOrders} />
@@ -255,7 +351,6 @@ export default function ChefPage() {
                 <StatCard icon="💰" label="Total Earnings" value={`₹${(stats.totalEarnings || 0).toFixed(0)}`} type="earnings" />
             </div>
 
-            {/* Tabs */}
             <div className="section-tabs">
                 <button className={`section-tab ${activeTab === 'menu' ? 'active' : ''}`} onClick={() => setActiveTab('menu')}>
                     🍽️ My Menu
@@ -265,7 +360,6 @@ export default function ChefPage() {
                 </button>
             </div>
 
-            {/* Menu Tab */}
             {activeTab === 'menu' && (
                 <div className="chef-layout">
                     <UploadForm onSuccess={loadDishes} />
@@ -281,14 +375,13 @@ export default function ChefPage() {
                             </div>
                         ) : (
                             dishes.map((d) => (
-                                <ChefDishCard key={d._id} dish={d} onToggle={handleToggle} onDelete={handleDelete} />
+                                <ChefDishCard key={d._id} dish={d} onToggle={handleToggle} onDelete={handleDelete} onPhotoUpdate={loadDishes} />
                             ))
                         )}
                     </div>
                 </div>
             )}
 
-            {/* Orders Tab */}
             {activeTab === 'orders' && (
                 <div>
                     {loadingOrders ? (

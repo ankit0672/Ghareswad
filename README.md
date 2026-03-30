@@ -1,4 +1,4 @@
-# Ghareswad 🍲
+# GhorerSwad 🍲
 ### Ghar ka Khana, Aapke Paas
 
 A **MERN stack** home-chef marketplace — like Zomato but for home mothers.  
@@ -47,7 +47,7 @@ MONGO_URI=mongodb+srv://YOUR_USER:YOUR_PASS@cluster0.xxxxx.mongodb.net/ghareswad
 cd d:\IPM\backend
 npm run dev
 ```
-You should see: `✅ MongoDB connected` and `🍲 Ghareswad server running on http://localhost:5000`
+You should see: `✅ MongoDB connected` and `🍲 GhorerSwad server running on http://localhost:5000`
 
 ### Step 3 — Run the Frontend
 ```powershell

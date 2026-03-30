@@ -1,40 +1,24 @@
 const Order = require('../models/Order');
 const Dish = require('../models/Dish');
+const User = require('../models/User');
 
 // POST /api/orders  (customer only)
 const placeOrder = async (req, res) => {
     try {
         const { items, deliveryAddress } = req.body;
-        // items: [{ dishId, qty }]
+        if (!items || items.length === 0) return res.status(400).json({ message: 'Cart is empty' });
 
-        if (!items || items.length === 0) {
-            return res.status(400).json({ message: 'Cart is empty' });
-        }
-
-        // Fetch dish details and group by chef
         const dishIds = items.map((i) => i.dishId);
         const dishes = await Dish.find({ _id: { $in: dishIds }, isAvailable: true });
+        if (dishes.length === 0) return res.status(400).json({ message: 'No valid dishes found' });
 
-        if (dishes.length === 0) {
-            return res.status(400).json({ message: 'No valid dishes found' });
-        }
-
-        // Group items by chef (one order per chef)
         const chefMap = {};
         for (const item of items) {
             const dish = dishes.find((d) => d._id.toString() === item.dishId);
             if (!dish) continue;
             const cid = dish.chefId.toString();
-            if (!chefMap[cid]) {
-                chefMap[cid] = { chefId: dish.chefId, chefName: dish.chefName, items: [] };
-            }
-            chefMap[cid].items.push({
-                dish: dish._id,
-                dishName: dish.name,
-                dishPhoto: dish.photo,
-                qty: item.qty,
-                price: dish.price,
-            });
+            if (!chefMap[cid]) chefMap[cid] = { chefId: dish.chefId, chefName: dish.chefName, items: [] };
+            chefMap[cid].items.push({ dish: dish._id, dishName: dish.name, dishPhoto: dish.photo, qty: item.qty, price: dish.price });
         }
 
         const orders = [];
@@ -53,6 +37,9 @@ const placeOrder = async (req, res) => {
             orders.push(order);
         }
 
+        // Award 10 reward points per order placed
+        await User.findByIdAndUpdate(req.user._id, { $inc: { rewardPoints: 10 } });
+
         res.status(201).json({ message: 'Order placed successfully', orders });
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -62,7 +49,9 @@ const placeOrder = async (req, res) => {
 // GET /api/orders/my  (customer)
 const getMyOrders = async (req, res) => {
     try {
-        const orders = await Order.find({ customerId: req.user._id }).sort({ createdAt: -1 });
+        const orders = await Order.find({ customerId: req.user._id })
+            .populate('items.dish', 'avgRating ratingCount')
+            .sort({ createdAt: -1 });
         res.json(orders);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -72,7 +61,9 @@ const getMyOrders = async (req, res) => {
 // GET /api/orders/chef  (chef)
 const getChefOrders = async (req, res) => {
     try {
-        const orders = await Order.find({ chefId: req.user._id }).sort({ createdAt: -1 });
+        const orders = await Order.find({ chefId: req.user._id })
+            .populate('items.dish', 'avgRating ratingCount')
+            .sort({ createdAt: -1 });
         res.json(orders);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -91,6 +82,27 @@ const getChefStats = async (req, res) => {
         const deliveredOrders = orders.filter((o) => o.status === 'delivered').length;
 
         res.json({ totalOrders, totalEarnings, pendingOrders, deliveredOrders });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// PATCH /api/orders/:id/cancel  (customer)
+const cancelOrder = async (req, res) => {
+    try {
+        const { reason } = req.body;
+        const order = await Order.findOne({ _id: req.params.id, customerId: req.user._id });
+        if (!order) return res.status(404).json({ message: 'Order not found' });
+        
+        if (order.status === 'delivered') {
+            return res.status(400).json({ message: 'Cannot cancel a delivered order' });
+        }
+        
+        order.status = 'cancelled';
+        if (reason) order.cancellationReason = reason;
+        await order.save();
+        
+        res.json(order);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -116,4 +128,4 @@ const updateOrderStatus = async (req, res) => {
     }
 };
 
-module.exports = { placeOrder, getMyOrders, getChefOrders, getChefStats, updateOrderStatus };
+module.exports = { placeOrder, getMyOrders, getChefOrders, getChefStats, updateOrderStatus, cancelOrder };

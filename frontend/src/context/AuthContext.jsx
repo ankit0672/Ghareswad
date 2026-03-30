@@ -8,21 +8,21 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const token = localStorage.getItem('ghareswad_token');
+        const token = localStorage.getItem('ghorerswad_token');
         if (token) {
             authAPI.getMe()
                 .then((res) => setUser(res.data))
-                .catch(() => localStorage.removeItem('ghareswad_token'))
+                .catch(() => localStorage.removeItem('ghorerswad_token'))
                 .finally(() => setLoading(false));
         } else {
             setLoading(false);
         }
     }, []);
 
-    const login = async (email, password) => {
-        const res = await authAPI.login({ email, password });
+    const login = async (email, password, role) => {
+        const res = await authAPI.login({ email, password, role });
         const data = res.data;
-        localStorage.setItem('ghareswad_token', data.token);
+        localStorage.setItem('ghorerswad_token', data.token);
         setUser(data);
         return data;
     };
@@ -30,13 +30,13 @@ export const AuthProvider = ({ children }) => {
     const register = async (formData) => {
         const res = await authAPI.register(formData);
         const data = res.data;
-        localStorage.setItem('ghareswad_token', data.token);
+        localStorage.setItem('ghorerswad_token', data.token);
         setUser(data);
         return data;
     };
 
     const logout = () => {
-        localStorage.removeItem('ghareswad_token');
+        localStorage.removeItem('ghorerswad_token');
         setUser(null);
     };
 

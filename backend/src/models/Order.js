@@ -47,6 +47,10 @@ const orderSchema = new mongoose.Schema(
             enum: ['pending', 'accepted', 'preparing', 'delivered', 'cancelled'],
             default: 'pending',
         },
+        cancellationReason: {
+            type: String,
+            default: '',
+        },
     },
     { timestamps: true }
 );

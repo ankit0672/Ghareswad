@@ -8,9 +8,9 @@ const orderRoutes = require('./routes/orders');
 
 const app = express();
 
-// CORS – allow frontend dev server
+// CORS – allow all origins in development (ngrok, local network, etc.)
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: true,
   credentials: true,
 }));
 
@@ -28,7 +28,7 @@ app.use('/api/orders', orderRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', app: 'Ghareswad API', time: new Date().toISOString() });
+  res.json({ status: 'ok', app: 'GhorerSwad API', time: new Date().toISOString() });
 });
 
 // 404 fallback

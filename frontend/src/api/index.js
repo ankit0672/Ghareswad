@@ -1,12 +1,12 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: '/api',
+    baseURL: import.meta.env.VITE_API_URL || '/api',
 });
 
 // Attach JWT token to every request
 api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('ghareswad_token');
+    const token = localStorage.getItem('ghorerswad_token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -26,6 +26,9 @@ export const dishAPI = {
         api.post('/dishes', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
     toggle: (id) => api.patch(`/dishes/${id}/toggle`),
     delete: (id) => api.delete(`/dishes/${id}`),
+    updatePhoto: (id, formData) =>
+        api.patch(`/dishes/${id}/photo`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+    rate: (id, data) => api.post(`/dishes/${id}/rate`, data),
 };
 
 export const orderAPI = {
@@ -34,6 +37,7 @@ export const orderAPI = {
     getChef: () => api.get('/orders/chef'),
     getStats: () => api.get('/orders/chef/stats'),
     updateStatus: (id, status) => api.patch(`/orders/${id}/status`, { status }),
+    cancel: (id, reason) => api.patch(`/orders/${id}/cancel`, { reason }),
 };
 
 export default api;

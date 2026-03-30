@@ -43,6 +43,11 @@ const userSchema = new mongoose.Schema(
             type: String,
             default: '',
         },
+        // Customer rewards
+        rewardPoints: {
+            type: Number,
+            default: 0,
+        },
     },
     { timestamps: true }
 );

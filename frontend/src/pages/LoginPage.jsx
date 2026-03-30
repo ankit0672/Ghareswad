@@ -39,7 +39,7 @@ export default function LoginPage() {
             if (tab === 'register') {
                 await register({ ...form, role });
             } else {
-                await login(form.email, form.password);
+                await login(form.email, form.password, role);
             }
             // navigate based on role stored in user
             const savedRole = localStorage.getItem('ghareswad_token')
@@ -58,7 +58,7 @@ export default function LoginPage() {
             {/* Hero Panel */}
             <div className="login-hero">
                 <HeroLogo />
-                <h1>Ghareswad</h1>
+                <h1>GhorerSwad</h1>
                 <p>Authentic home-cooked meals from local moms to your doorstep.</p>
                 <div className="hero-features">
                     <div className="hero-feature">

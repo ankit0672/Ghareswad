@@ -7,6 +7,7 @@ const {
     getChefOrders,
     getChefStats,
     updateOrderStatus,
+    cancelOrder,
 } = require('../controllers/orderController');
 
 router.post('/', protect, customerOnly, placeOrder);
@@ -14,5 +15,6 @@ router.get('/my', protect, customerOnly, getMyOrders);
 router.get('/chef', protect, chefOnly, getChefOrders);
 router.get('/chef/stats', protect, chefOnly, getChefStats);
 router.patch('/:id/status', protect, chefOnly, updateOrderStatus);
+router.patch('/:id/cancel', protect, customerOnly, cancelOrder);
 
 module.exports = router;

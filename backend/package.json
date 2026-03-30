@@ -1,7 +1,7 @@
 {
-  "name": "ghareswad-backend",
+  "name": "ghorerswad-backend",
   "version": "1.0.0",
-  "description": "Ghareswad - Home Chef Marketplace Backend",
+  "description": "GhorerSwad - Home Chef Marketplace Backend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

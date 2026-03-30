@@ -399,6 +399,13 @@ input, textarea, select { font-family: inherit; }
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+.form-row .form-group {
+  min-width: 0;
+}
+.form-row .form-group input {
+  width: 100%;
+  min-width: 0;
+}
 
 /* ========================
    CUSTOMER PAGE
@@ -649,6 +656,7 @@ input, textarea, select { font-family: inherit; }
   padding: 24px;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border);
+  overflow: hidden;
 }
 .upload-card h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; }
 
@@ -823,6 +831,230 @@ input, textarea, select { font-family: inherit; }
 .page-container { animation: fadeIn 0.35s ease; }
 .dish-card { animation: slideUp 0.3s ease both; }
 .login-form-panel { animation: fadeIn 0.4s ease; }
+
+/* ========================
+   REWARD BADGE (Navbar)
+   ======================== */
+.reward-badge {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+}
+.nav-active { color: var(--saffron-dark) !important; }
+
+/* ========================
+   DISH STAR RATINGS
+   ======================== */
+.dish-stars {
+  font-size: 0.8rem;
+  color: #f59e0b;
+  display: block;
+  margin-bottom: 4px;
+}
+.dish-rating-val { color: var(--text-muted); font-size: 0.72rem; }
+.dish-no-rating { font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 4px; }
+
+/* ========================
+   CHEF DISH PHOTO UPDATE
+   ======================== */
+.chef-dish-img-wrap {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  cursor: pointer;
+  overflow: hidden;
+}
+.chef-dish-img-wrap:hover .chef-dish-img-overlay { opacity: 1; }
+.chef-dish-img-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.48);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+  border-radius: 0;
+}
+
+/* ========================
+   GPS LOCATION BUTTON
+   ======================== */
+.loc-input-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.loc-input-row input { flex: 1; min-width: 0; }
+.loc-btn {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+  padding: 8px 10px !important;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.delivery-address-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.delivery-address-input {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.delivery-address-input:focus { border-color: var(--saffron); }
+
+/* ========================
+   ORDER TRACKING PAGE
+   ======================== */
+.orders-tracking-list { display: flex; flex-direction: column; gap: 16px; }
+
+.tracking-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  animation: slideUp 0.3s ease both;
+}
+.tracking-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+/* Status Timeline */
+.status-timeline {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  margin-bottom: 16px;
+  padding: 12px 0;
+}
+.cancelled-line { justify-content: center; }
+.status-timeline-cancelled {
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.timeline-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+}
+.timeline-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--border);
+  border: 2px solid var(--border);
+  transition: all 0.3s;
+  z-index: 1;
+}
+.timeline-step.done .timeline-dot {
+  background: var(--saffron);
+  border-color: var(--saffron);
+}
+.timeline-step.active .timeline-dot {
+  background: white;
+  border-color: var(--saffron);
+  box-shadow: 0 0 0 3px rgba(249,115,22,0.25);
+  width: 18px;
+  height: 18px;
+}
+.timeline-line {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--border);
+  z-index: 0;
+}
+.timeline-line.done { background: var(--saffron); }
+.timeline-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+  text-transform: capitalize;
+  font-weight: 500;
+  text-align: center;
+}
+.timeline-step.done .timeline-label { color: var(--saffron-dark); font-weight: 600; }
+.timeline-step.active .timeline-label { color: var(--saffron-dark); font-weight: 700; }
+
+.tracking-items { margin-bottom: 8px; }
+.tracking-item-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  padding: 3px 0;
+}
+
+/* ========================
+   RATING WIDGET (Orders page)
+   ======================== */
+.rating-widget {
+  margin-top: 14px;
+  padding: 14px;
+  background: var(--cream);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--saffron-light);
+}
+.rating-dish-name { font-size: 0.82rem; font-weight: 600; margin-bottom: 8px; }
+.star-row { display: flex; gap: 4px; margin-bottom: 8px; }
+.star {
+  font-size: 1.6rem;
+  cursor: pointer;
+  color: var(--border);
+  transition: color 0.15s, transform 0.15s;
+  line-height: 1;
+  user-select: none;
+}
+.star.lit { color: #f59e0b; }
+.star:hover { transform: scale(1.2); }
+.rating-comment {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-family: inherit;
+  outline: none;
+  margin-bottom: 8px;
+  transition: border-color 0.2s;
+}
+.rating-comment:focus { border-color: var(--saffron); }
+.rating-done {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #dcfce7;
+  color: var(--green);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 
 /* ========================
    SCROLLBAR
