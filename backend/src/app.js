@@ -8,9 +8,20 @@ const orderRoutes = require('./routes/orders');
 
 const app = express();
 
-// CORS – allow all origins in development (ngrok, local network, etc.)
+// CORS configuration
+const allowedOrigins = [
+  'http://localhost:5173', // Local Vite frontend
+  'https://ghareswad.vercel.app' // Deployed Vercel frontend
+];
+
 app.use(cors({
-  origin: true,
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 
